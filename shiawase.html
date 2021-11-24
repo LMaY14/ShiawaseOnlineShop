@@ -47,20 +47,24 @@
 
 
                         <form class="d-flex">
-                            <input class="form-control me-xxl-auto" style="position: relative;left:20px;" type="search" placeholder="Search" aria-label="Search">
-                            <button class="btn btn-light" style="position: relative;left:40px;" type="submit"><img class="navbar-brand" width="20" height="30"
-                                    src="images/search.png"></button>
+                            <input class="form-control me-xxl-auto" style="position: relative;left:20px;" type="search"
+                                placeholder="Search" aria-label="Search">
+                            <button class="btn btn-light" style="position: relative;left:40px;" type="submit"><img
+                                    class="navbar-brand" width="20" height="30" src="images/search.png"></button>
                         </form>
 
-                        <img class="navbar-brand justify-content-end" style="position: relative;bottom: 20px;left:55px;" width="60" height="70" src="images/girl.png">
+                        <img class="navbar-brand justify-content-end" style="position: relative;bottom: 20px;left:55px;"
+                            width="60" height="70" src="images/girl.png">
                         <li class="nav-item" v-on:click="ShowMyCart">
                             <a class="nav-link"
                                 style="color: ivory;font-family: Courier;font-size: 18px;position: relative; left:80px;"
                                 href="#">({{countitem}})</a>
-                            <img class="navbar-brand "style="position: relative; bottom:20px;left:60px;" width="60" height="70" src="images/wicker-basket.png">
+                            <img class="navbar-brand " style="position: relative; bottom:20px;left:60px;" width="60"
+                                height="70" src="images/wicker-basket.png">
                         </li>
-                        <b 
-                            style="color: ivory;font-family: Garamond;font-size: 14px;position: relative; top: 30px;right:80px;"> Miko</b>
+                        <b
+                            style="color: ivory;font-family: Garamond;font-size: 14px;position: relative; top: 30px;right:80px;">
+                            Miko</b>
                         <b class="text-warning"
                             style="font-family: Garamond;font-size: 14px;position: relative; top: 50px;right:120px;">20points</b>
                         <a class="btn btn-link text-light" style="font-family: Garamond;font-size: 18px;"
@@ -68,7 +72,6 @@
                     </div>
                 </div>
             </nav>
-
             <div class="container" style="margin-top : 30px;" v-if="product_page">
                 <label style="color: ivory;font-family: Garamond;font-size: 30px;">Bakery&Pastry ::</label>
                 <hr style="color: white" />
@@ -91,10 +94,11 @@
                 <div class="home container">
                     <div class="row">
                         <div class="col-md-12 pt-5">
-                            <CartItem v-for="item in cart" :item="item" :key="item.id" />
+                            <CartItem v-on:minus-item="minuscount" v-for="item in cart" :item="item" :key="item.id" />
+                            <Product v-on:add-item="addItem" v-for="product in products" :product="product"
+                                    :key="product.id" />
                         </div>
-                        <div><label>Total quantity - {{countitem}}</label></div>
-
+                        <div><label>Total quantity -> {{countitem}}</label></div>
                         <div><label>Total price $ {{countprice}}</label></div>
 
                     </div>
@@ -129,9 +133,13 @@
     </template>
 
     <template id="cartitem-template">
-        <div>{{item.name}} - {{item.count}} - $ {{item.price*item.count}} <button @click="deleteFromCart(index)"
-                class="btn  btn-block"><img width="20" height="20" src="images/bin.png"></button></div>
-
+        <div>{{item.name}} <i class="minus-count" @click="removeFromCart(item)"><img width="20" height="20"
+                    src="images/minus-button.png"></i>
+            {{item.count}} <i class="plus-count" @click="addToCart()"><img width="20" height="20"
+                    src="images/plus.png"></i> total $
+            {{item.total}}
+            <button @click="" class="btn  btn-block"><img width="20" height="20" src="images/bin.png"></button>
+        </div>
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
@@ -241,37 +249,31 @@
 
                     if (item) { // if this product already in the cart
                         item.count += 1
+                        item.total = item.count * item.price
                     } else {
                         item = this.products.find(product => product.id == id)
                         this.cart.push({
                             id: item.id,
                             name: item.name,
+                            price: item.price,
                             count: 1,
-                            price: item.price
-
+                            total: item.price
                         })
                     }
+
                     console.log(this.cart)
                 },
-                //delete from cart
-                deleteItem: function (id) {
-                    console.log(this.products)
-                    console.log(id)
-
-                    //Check if this product already in the cart
-                    item = this.cart.find(product => product.id == id)
-
-                    if (item) { // if this product already in the cart
-                        item.count -= 1
-                    } else {
-                        item = this.products.find(product => product.id == id)
-                        this.cart.push({
-                            id: item.id,
-                            name: item.name,
-                            count: 1
-                        })
-                    }
+                minuscount: function (id) {
                     console.log(this.cart)
+                    console.log(id)
+                    item = this.cart.find(product => product.id == id)
+                    var index = this.cart.indexOf(id);
+                    this.cart.splice(index, 1);
+                    if (item) {
+                        item.count -= 1
+                        item.total = item.count * item.price
+                    }
+
                 },
 
                 ShowMyCart: function () {
@@ -282,9 +284,10 @@
                 ShowHomePage: function () {
                     this.product_page = true
                     this.cart_page = false
-                }
-            },
+                },
 
+
+            },
             computed: {
                 countitem: function () {
                     var total = 0
@@ -292,8 +295,18 @@
                         total += this.cart[i].count
                     }
                     return total
+                },
+                countprice: function () {
+                    var totalprice = 0
+                    this.cart.forEach(function (item) {
+                        totalprice += item.total;
+                    })
+                    return totalprice
+
                 }
+
             }
+
 
         })
 
@@ -307,25 +320,40 @@
             methods: {
                 addToCart: function () {
                     this.$emit("add-item", this.product.id)
-                }
+                },
 
             },
-            //delete function
-            deleteFromCart: function () {
-                this.$emit("delete-item", this.product.id)
 
-
-            }
         });
 
         app.component('Cartitem', {
+            data: function () {
+                return {}
+            },
             props: ['item'],
             template: '#cartitem-template',
+            methods: {
+                addToCart: function () {
+                    this.$emit("add-item", this.product.id)
+                },
+                removeFromCart: function (item) {
+                    this.$emit("minus-item", this.product.id)
+                },
+
+            },
         });
 
         app.mount("#app")
     </script>
+    <style scoped>
+        .minus-count {
+            cursor: pointer;
+        }
 
+        .plus-count {
+            cursor: pointer;
+        }
+    </style>
 
 </body>
 
